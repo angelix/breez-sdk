@@ -47,8 +47,7 @@ jobs:
       - name: install dependencies
         run: |
           cd libs/sdk-bindings
-          make init      
-          brew install protobuf          
+          make init          
 
       - name: run lib tests        
         run: |                    
