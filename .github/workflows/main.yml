@@ -59,16 +59,11 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: |                    
           curl -o jna-5.12.1.jar https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.12.1/jna-5.12.1.jar
-          export CLASSPATH=$(pwd)/jna-5.12.1.jar;    
-
-      - name: run lib tests macos-latest
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: |         
-          cd libs/sdk-bindings
-          make csharp-darwin golang-darwin
-          cd ..          
-          cargo test
+          export CLASSPATH=$(pwd)/jna-5.12.1.jar;          
       
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+
       - name: run lib tests windows-latest
         if: ${{ matrix.os == 'windows-latest' }}
         run: |         
@@ -78,6 +73,13 @@ jobs:
           cargo test test_csharp
           cargo test test_golang
       
+      - name: run lib tests macos-latest
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |         
+          cd libs/sdk-bindings
+          make csharp-darwin golang-darwin
+          cd ..          
+          cargo test
       - name: run tools tests        
         run: |
           cd tools/sdk-cli
