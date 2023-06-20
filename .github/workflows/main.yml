@@ -68,8 +68,10 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: |         
           cd libs/sdk-bindings
-          make csharp-darwin golang-darwin
-          cd ..          
+          make csharp-windows golang-windows
+          cd ../sdk-core
+          cargo test
+          cd ..    
           cargo test test_csharp
           cargo test test_golang
       
