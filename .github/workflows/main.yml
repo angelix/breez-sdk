@@ -49,10 +49,20 @@ jobs:
           cd libs/sdk-bindings
           make init          
 
-      - name: run lib tests        
+      - name: configure jna windows
+        if: ${{ matrix.os == 'windows-latest' }}        
         run: |                    
           curl -o jna-5.12.1.jar https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.12.1/jna-5.12.1.jar
-          export CLASSPATH=$(pwd)/jna-5.12.1.jar;
+          set CLASSPATH="%cd%/jna-5.12.1.jar;"
+
+      - name: configure jna macos-latest
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |                    
+          curl -o jna-5.12.1.jar https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.12.1/jna-5.12.1.jar
+          export CLASSPATH=$(pwd)/jna-5.12.1.jar;    
+
+      - name: run lib tests        
+        run: |         
           cd libs/sdk-bindings
           make csharp-darwin golang-darwin
           cd ..          
