@@ -24,9 +24,16 @@ jobs:
           cargo fmt -- --check
 
   build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        include:         
+          - os: macos-latest            
+            target: Macos
 
-    runs-on: macOS-latest
-
+          - os: windows-latest            
+            target: Windows
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
