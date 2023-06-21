@@ -65,8 +65,9 @@ jobs:
         uses: arduino/setup-protoc@v2      
       
       - uses: shogo82148/actions-setup-perl@v1
+        if: ${{ matrix.os == 'windows-latest' }}
         with:
-        perl-version: '5.34'
+          perl-version: '5.34'
 
       - name: Perl version
         run: perl -V
