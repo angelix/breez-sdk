@@ -64,15 +64,24 @@ jobs:
       - name: Install Protoc
         uses: arduino/setup-protoc@v2
       
+      - name: Install OpenSSL for Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: vcpkg integrate install; vcpkg install openssl:x64-windows
+
+      - name: Instal LLVM for Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: choco install -y llvm --version 9.0.1
+
       - name: Set Env Variables for Windows
         uses: allenevans/set-env@v2.0.0
         if: ${{ matrix.os == 'windows-latest' }}
-        with:
+        with:          
+          OPENSSL_STATIC: 1
           OPENSSL_DIR: 'C:/vcpkg/packages/openssl_x64-windows'
           # This paths are required to work with static linking
           OPENSSL_LIB_DIR: 'C:/vcpkg/packages/openssl_x64-windows/lib'
           OPENSSL_INCLUDE_DIR: 'C:/vcpkg/packages/openssl_x64-windows/include'
-          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'
+          LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'     
 
       - name: run lib tests windows-latest
         if: ${{ matrix.os == 'windows-latest' }}
