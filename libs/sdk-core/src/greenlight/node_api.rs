@@ -8,6 +8,7 @@ use crate::{Channel, ChannelState};
 use anyhow::{anyhow, Result};
 use bitcoin::bech32::{u5, ToBase32};
 use bitcoin::secp256k1::ecdsa::{RecoverableSignature, RecoveryId};
+use gl_client::node::ClnClient;
 use gl_client::pb::amount::Unit;
 
 use gl_client::pb::cln::{
@@ -41,7 +42,8 @@ pub(crate) struct Greenlight {
     sdk_config: Config,
     tls_config: TlsConfig,
     signer: Signer,
-    scheduler: Mutex<Option<Scheduler>>,
+    gl_client: Mutex<Option<node::Client>>,
+    node_client: Mutex<Option<ClnClient>>,
 }
 
 impl Greenlight {
@@ -57,7 +59,8 @@ impl Greenlight {
             sdk_config,
             tls_config,
             signer,
-            scheduler: Mutex::new(None),
+            gl_client: Mutex::new(None),
+            node_client: Mutex::new(None),
         })
     }
 
@@ -110,31 +113,23 @@ impl Greenlight {
     }
 
     async fn get_client(&self) -> Result<node::Client> {
-        let client: node::Client = self
-            .scheduler()
-            .await?
-            .schedule(self.tls_config.clone())
-            .await?;
-        Ok(client)
+        let mut gl_client = self.gl_client.lock().await;
+        if gl_client.is_none() {
+            let scheduler =
+                Scheduler::new(self.signer.node_id(), self.sdk_config.network.into()).await?;
+            *gl_client = Some(scheduler.schedule(self.tls_config.clone()).await?);
+        }
+        Ok(gl_client.clone().unwrap())
     }
 
     pub(crate) async fn get_node_client(&self) -> Result<node::ClnClient> {
-        let client: node::ClnClient = self
-            .scheduler()
-            .await?
-            .schedule(self.tls_config.clone())
-            .await?;
-        Ok(client)
-    }
-
-    async fn scheduler(&self) -> Result<Scheduler> {
-        let mut existing = self.scheduler.lock().await;
-        if existing.is_none() {
+        let mut node_client = self.node_client.lock().await;
+        if node_client.is_none() {
             let scheduler =
                 Scheduler::new(self.signer.node_id(), self.sdk_config.network.into()).await?;
-            *existing = Some(scheduler);
+            *node_client = Some(scheduler.schedule(self.tls_config.clone()).await?);
         }
-        Ok(existing.as_ref().unwrap().clone())
+        Ok(node_client.clone().unwrap())
     }
 }
 

@@ -540,6 +540,7 @@ impl BreezServices {
     /// * channels - The list of channels and their status
     /// * payments - The incoming/outgoing payments
     pub async fn sync(&self) -> Result<()> {
+        let start = Instant::now();
         self.start_node().await?;
         self.connect_lsp_peer().await?;
 
@@ -569,6 +570,10 @@ impl BreezServices {
         let mut payments = closed_channel_payments_res?;
         payments.extend(new_data.payments.clone());
         self.persister.insert_or_update_payments(&payments)?;
+
+        let duration = start.elapsed();
+        info!("Sync duration: {:?}", duration);
+
         self.notify_event_listeners(BreezEvent::Synced).await?;
         Ok(())
     }
