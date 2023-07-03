@@ -9,6 +9,7 @@ use bitcoin::hashes::Hash;
 use bitcoin::secp256k1::{PublicKey, Secp256k1, SecretKey};
 use bitcoin::util::bip32::{ChildNumber, ExtendedPrivKey};
 use bitcoin::{Address, Script};
+use gl_client::pb::cln::TxprepareResponse;
 use gl_client::pb::Invoice;
 use gl_client::pb::Peer;
 use gl_client::pb::WithdrawResponse;
@@ -63,6 +64,11 @@ pub trait NodeAPI: Send + Sync {
         to_address: String,
         fee_rate_sats_per_vbyte: u64,
     ) -> Result<WithdrawResponse>;
+    async fn prepare_withdraw(
+        &self,
+        to_address: String,
+        fee_rate_sats_per_vbyte: u32,
+    ) -> Result<TxprepareResponse>;
     async fn start_signer(&self, shutdown: mpsc::Receiver<()>);
     async fn list_peers(&self) -> Result<Vec<Peer>>;
     async fn connect_peer(&self, node_id: String, addr: String) -> Result<()>;

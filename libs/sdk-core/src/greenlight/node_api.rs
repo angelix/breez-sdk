@@ -1,38 +1,34 @@
+use std::cmp::{max, min};
+use std::str::FromStr;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use anyhow::{anyhow, Result};
+use bitcoin::bech32::{ToBase32, u5};
+use bitcoin::secp256k1::ecdsa::{RecoverableSignature, RecoveryId};
+use bitcoin::secp256k1::Secp256k1;
+use bitcoin::util::bip32::{ChildNumber, ExtendedPrivKey};
+use gl_client::{node, pb, utils};
+use gl_client::pb::{
+    Amount, Invoice, InvoiceRequest, InvoiceStatus, OffChainPayment, PayStatus, WithdrawResponse,
+};
+use gl_client::pb::amount::Unit;
+use gl_client::pb::cln::{self, CloseRequest, ListclosedchannelsClosedchannels, ListclosedchannelsRequest, ListpeerchannelsRequest, TxprepareResponse};
+use gl_client::pb::Peer;
+use gl_client::scheduler::Scheduler;
+use gl_client::signer::Signer;
+use gl_client::tls::TlsConfig;
+use lightning_invoice::{RawInvoice, SignedRawInvoice};
+use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
+use tokio::sync::{mpsc, Mutex};
+use tonic::Streaming;
+
+use crate::{Channel, ChannelState};
 use crate::invoice::parse_invoice;
 use crate::models::{
     Config, GreenlightCredentials, LnPaymentDetails, Network, NodeAPI, NodeState, PaymentDetails,
     PaymentType, SyncResponse, UnspentTransactionOutput,
 };
-use crate::{Channel, ChannelState};
-
-use anyhow::{anyhow, Result};
-use bitcoin::bech32::{u5, ToBase32};
-use bitcoin::secp256k1::ecdsa::{RecoverableSignature, RecoveryId};
-use gl_client::pb::amount::Unit;
-
-use gl_client::pb::cln::{
-    self, CloseRequest, ListclosedchannelsClosedchannels, ListclosedchannelsRequest,
-    ListpeerchannelsRequest,
-};
-use gl_client::pb::{
-    Amount, Invoice, InvoiceRequest, InvoiceStatus, OffChainPayment, PayStatus, WithdrawResponse,
-};
-use gl_client::scheduler::Scheduler;
-use gl_client::signer::Signer;
-use gl_client::tls::TlsConfig;
-use gl_client::{node, pb, utils};
-
-use bitcoin::secp256k1::Secp256k1;
-use bitcoin::util::bip32::{ChildNumber, ExtendedPrivKey};
-use gl_client::pb::Peer;
-use lightning_invoice::{RawInvoice, SignedRawInvoice};
-use serde::{Deserialize, Serialize};
-use std::cmp::{max, min};
-use std::str::FromStr;
-use std::time::{SystemTime, UNIX_EPOCH};
-use strum_macros::{Display, EnumString};
-use tokio::sync::{mpsc, Mutex};
-use tonic::Streaming;
 
 const MAX_PAYMENT_AMOUNT_MSAT: u64 = 4294967000;
 const MAX_INBOUND_LIQUIDITY_MSAT: u64 = 4000000000;
@@ -523,6 +519,32 @@ impl NodeAPI for Greenlight {
         Ok(client.withdraw(request).await?.into_inner())
     }
 
+    async fn prepare_withdraw(
+        &self,
+        to_address: String,
+        fee_rate_sats_per_vbyte: u32,
+    ) -> Result<TxprepareResponse> {
+        let mut node_client = self.get_node_client().await?;
+
+        let request = cln::TxprepareRequest {
+            outputs: vec![cln::OutputDesc {
+                address: to_address,
+                amount: Some(cln::Amount {
+                    msat: 100,
+                }),
+            }],
+            feerate: Some(cln::Feerate {
+                style: Some(cln::feerate::Style::Perkw(
+                    fee_rate_sats_per_vbyte,
+                )),
+            }),
+            minconf: None,
+            utxos: vec![],
+        };
+
+        Ok(node_client.tx_prepare(request).await?.into_inner())
+    }
+
     async fn execute_command(&self, command: String) -> Result<String> {
         let node_cmd = NodeCommand::from_str(&command)
             .map_err(|_| anyhow!(format!("command not found: {command}")))?;
@@ -874,9 +896,10 @@ impl TryFrom<ListclosedchannelsClosedchannels> for crate::models::Channel {
 
 #[cfg(test)]
 mod tests {
-    use crate::models;
     use anyhow::Result;
     use gl_client::pb;
+
+    use crate::models;
 
     #[test]
     fn test_channel_states() -> Result<()> {

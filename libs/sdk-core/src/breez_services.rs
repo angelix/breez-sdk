@@ -471,6 +471,10 @@ impl BreezServices {
         Ok(())
     }
 
+    pub async fn prepare_withdraw(&self, fee_rate_sats_per_vbyte: u32) -> Result<()> {
+
+    }
+
     /// Fetch live rates of fiat currencies
     pub async fn fetch_fiat_rates(&self) -> Result<Vec<Rate>> {
         self.fiat_api.fetch_fiat_rates().await
