@@ -1,0 +1,4 @@
+breez_sdk.go
+*.dll
+*.dylib
+*.so

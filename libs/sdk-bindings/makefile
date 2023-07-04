@@ -57,22 +57,24 @@ csharp-linux: $(SOURCES)
 golang-darwin: darwin-universal
 	cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go
 	uniffi-bindgen-go src/breez_sdk.udl -o ffi/golang -c ./uniffi.toml
-	cp ../target/darwin-universal/release/libbreez_sdk_bindings.dylib ffi/golang
-	cp -r ffi/golang/breez/breez_sdk tests/bindings/golang/
+	cp ../target/aarch64-apple-darwin/release/libbreez_sdk_bindings.dylib tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk/lib/darwin-aarch64
+	cp ../target/x86_64-apple-darwin/release/libbreez_sdk_bindings.dylib tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk/lib/darwin-amd64
+	cp -r ffi/golang/breez/breez_sdk/breez_sdk.go tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk
 
-TARGET ?= aarch64-unknown-linux-gnu
 golang-linux: $(SOURCES)
 	cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go
-	cargo build --release --target $(TARGET)
+	cargo build --release --target aarch64-unknown-linux-gnu
+	cargo build --release --target x86_64-unknown-linux-gnu
 	uniffi-bindgen-go src/breez_sdk.udl -o ffi/golang -c ./uniffi.toml
-	cp ../target/$(TARGET)/release/libbreez_sdk_bindings.so ffi/golang
-	cp -r ffi/golang/breez/breez_sdk tests/bindings/golang/
+	cp ../target/aarch64-unknown-linux-gnu/release/libbreez_sdk_bindings.so tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk/lib/linux-aarch64
+	cp ../target/x86_64-unknown-linux-gnu/release/libbreez_sdk_bindings.so tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk/lib/linux-amd64
+	cp -r ffi/golang/breez/breez_sdk/breez_sdk.go tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk
 
 golang-windows: windows
 	cargo install uniffi-bindgen-go --git https://github.com/NordSecurity/uniffi-bindgen-go
 	uniffi-bindgen-go src/breez_sdk.udl -o ffi/golang -c ./uniffi.toml
-	cp ../target/x86_64-pc-windows-gnu/release/breez_sdk_bindings.dll ffi/golang
-	cp -r ffi/golang/breez/breez_sdk tests/bindings/golang/
+	cp ../target/x86_64-pc-windows-gnu/release/breez_sdk_bindings.dll tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk/lib/windows-amd64
+	cp -r ffi/golang/breez/breez_sdk/breez_sdk.go tests/bindings/golang/vendor/github.com/breez/breez-sdk-go/breez_sdk
 
 swift-ios: ios-universal
 	cargo run --features=uniffi/cli --bin uniffi-bindgen generate src/breez_sdk.udl -l swift -o ffi/swift-ios

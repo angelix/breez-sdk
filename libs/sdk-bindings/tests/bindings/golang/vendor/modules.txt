@@ -1,0 +1,9 @@
+# github.com/breez/breez-sdk-go v0.0.0-20230703075058-3c67d1fac213
+## explicit; go 1.19
+github.com/breez/breez-sdk-go/breez_sdk
+github.com/breez/breez-sdk-go/breez_sdk/lib
+github.com/breez/breez-sdk-go/breez_sdk/lib/darwin-aarch64
+github.com/breez/breez-sdk-go/breez_sdk/lib/darwin-amd64
+github.com/breez/breez-sdk-go/breez_sdk/lib/linux-aarch64
+github.com/breez/breez-sdk-go/breez_sdk/lib/linux-amd64
+github.com/breez/breez-sdk-go/breez_sdk/lib/windows-amd64

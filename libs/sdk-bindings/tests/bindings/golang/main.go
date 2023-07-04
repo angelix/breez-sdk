@@ -1,7 +1,7 @@
 package main
 
 import (
-	"example.org/golang/breez_sdk"
+	"github.com/breez/breez-sdk-go/breez_sdk"
 	"log"
 )
 
