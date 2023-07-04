@@ -68,7 +68,7 @@ pub trait NodeAPI: Send + Sync {
         &self,
         to_address: String,
         fee_rate_sats_per_vbyte: u32,
-    ) -> Result<TxprepareResponse>;
+    ) -> Result<PrepareWithdrawResponse>;
     async fn start_signer(&self, shutdown: mpsc::Receiver<()>);
     async fn list_peers(&self) -> Result<Vec<Peer>>;
     async fn connect_peer(&self, node_id: String, addr: String) -> Result<()>;
@@ -795,6 +795,15 @@ pub enum LnUrlCallbackStatus {
 #[serde(tag = "buy_bitcoin_provider")]
 pub enum BuyBitcoinProvider {
     Moonpay,
+}
+
+/// We need to prepare a withdraw transaction to know what a fee it will be charged in satoshis
+/// this model holds the data
+#[derive(PartialEq, Eq, Debug, Clone, Deserialize, Serialize)]
+pub struct PrepareWithdrawResponse {
+    pub raw_tx_hex: String,
+    pub sat_per_vbyte: u32,
+    pub fee_sat: u64,
 }
 
 impl FromStr for BuyBitcoinProvider {

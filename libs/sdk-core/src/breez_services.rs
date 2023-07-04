@@ -1,3 +1,21 @@
+use std::cmp::max;
+use std::str::FromStr;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
+
+use anyhow::{anyhow, Result};
+use bip39::*;
+use bitcoin::hashes::{sha256, Hash};
+use bitcoin::util::bip32::ChildNumber;
+use tokio::runtime::Runtime;
+use tokio::sync::{mpsc, Mutex};
+use tokio::time::{sleep, Duration};
+use tonic::codegen::InterceptedService;
+use tonic::metadata::{Ascii, MetadataValue};
+use tonic::service::Interceptor;
+use tonic::transport::{Channel, Uri};
+use tonic::{Request, Status};
+
 use crate::backup::{BackupRequest, BackupTransport, BackupWatcher};
 use crate::boltzswap::BoltzApi;
 use crate::chain::{ChainService, MempoolSpace, RecommendedFees};
@@ -31,22 +49,6 @@ use crate::swap::BTCReceiveSwap;
 use crate::BuyBitcoinProvider::Moonpay;
 use crate::*;
 use crate::{BuyBitcoinProvider, LnUrlAuthRequestData, LnUrlWithdrawRequestData, PaymentResponse};
-use anyhow::{anyhow, Result};
-use bip39::*;
-use bitcoin::hashes::{sha256, Hash};
-use bitcoin::util::bip32::ChildNumber;
-use std::cmp::max;
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::runtime::Runtime;
-use tokio::sync::{mpsc, Mutex};
-use tokio::time::{sleep, Duration};
-use tonic::codegen::InterceptedService;
-use tonic::metadata::{Ascii, MetadataValue};
-use tonic::service::Interceptor;
-use tonic::transport::{Channel, Uri};
-use tonic::{Request, Status};
 
 /// Trait that can be used to react to various [BreezEvent]s emitted by the SDK.
 pub trait EventListener: Send + Sync {
@@ -471,8 +473,18 @@ impl BreezServices {
         Ok(())
     }
 
-    pub async fn prepare_withdraw(&self, fee_rate_sats_per_vbyte: u32) -> Result<()> {
-
+    pub async fn prepare_withdraw(
+        &self,
+        to_address: String,
+        fee_rate_sats_per_vbyte: u32,
+    ) -> Result<PrepareWithdrawResponse> {
+        self.start_node().await?;
+        let response = self
+            .node_api
+            .prepare_withdraw(to_address, fee_rate_sats_per_vbyte)
+            .await?;
+        self.sync().await?;
+        Ok(response)
     }
 
     /// Fetch live rates of fiat currencies
@@ -1351,9 +1363,8 @@ pub(crate) mod tests {
     use std::sync::Arc;
 
     use anyhow::{anyhow, Result};
-    use reqwest::Url;
-
     use regex::Regex;
+    use reqwest::Url;
 
     use crate::breez_services::{BreezServices, BreezServicesBuilder};
     use crate::fiat::Rate;
