@@ -75,13 +75,8 @@ jobs:
 
       - name: Install OpenSSL for Windows
         if: ${{ matrix.os == 'windows-latest' }}
-        run: choco install openssl
-            
-      - name: OpenSSL path
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          where openssl
-
+        run: choco install openssl -v
+       
       - name: Install dependencies
         run: |
           cd libs/sdk-bindings
@@ -92,10 +87,10 @@ jobs:
         env:
           OPENSSL_STATIC: 1
           OPENSSL_NO_VENDOR: 1
-          OPENSSL_DIR: 'C:\Program Files\OpenSSL-Win\'
+          OPENSSL_DIR: 'C:\ProgramData\chocolatey\lib\openssl\local'
           # This paths are required to work with static linking
-          OPENSSL_LIB_DIR: 'C:\Program Files\OpenSSL-Win\lib'
-          OPENSSL_INCLUDE_DIR: 'C:\Program Files\OpenSSL-Win\include'
+          OPENSSL_LIB_DIR: 'C:\ProgramData\chocolatey\lib\openssl\local\lib'
+          OPENSSL_INCLUDE_DIR: 'C:\ProgramData\chocolatey\lib\openssl\local\include'
         run: |         
           cd libs/sdk-bindings
           make csharp-windows golang-windows
