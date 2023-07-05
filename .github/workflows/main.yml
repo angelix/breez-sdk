@@ -86,10 +86,11 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         env:
           OPENSSL_STATIC: 1
-          OPENSSL_DIR: 'C:/Program Files/OpenSSL-Win64'
+          OPENSSL_NO_VENDOR: 1
+          OPENSSL_DIR: 'C:\Program Files\OpenSSL-Win64\'
           # This paths are required to work with static linking
-          OPENSSL_LIB_DIR: 'C:/Program Files/OpenSSL-Win64/lib'
-          OPENSSL_INCLUDE_DIR: 'C:/Program Files/OpenSSL-Win64/include'
+          OPENSSL_LIB_DIR: 'C:\Program Files\OpenSSL-Win64\lib'
+          OPENSSL_INCLUDE_DIR: 'C:\Program Files\OpenSSL-Win64\include'
         run: |         
           cd libs/sdk-bindings
           make csharp-windows golang-windows
