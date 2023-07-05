@@ -12,10 +12,10 @@ use gl_client::pb::cln::{
     self, CloseRequest, ListclosedchannelsClosedchannels, ListclosedchannelsRequest,
     ListpeerchannelsRequest, TxprepareResponse,
 };
-use gl_client::pb::Peer;
 use gl_client::pb::{
     Amount, Invoice, InvoiceRequest, InvoiceStatus, OffChainPayment, PayStatus, WithdrawResponse,
 };
+use gl_client::pb::{ListFundsResponse, Peer};
 use gl_client::scheduler::Scheduler;
 use gl_client::signer::Signer;
 use gl_client::tls::TlsConfig;
@@ -181,10 +181,7 @@ impl NodeAPI for Greenlight {
             .into_inner();
 
         // list both off chain funds and on chain fudns
-        let funds = client
-            .list_funds(pb::ListFundsRequest::default())
-            .await?
-            .into_inner();
+        let funds = self.list_funds().await?;
         let offchain_funds = funds.channels;
         let onchain_funds = funds.outputs;
 
@@ -247,12 +244,7 @@ impl NodeAPI for Greenlight {
         });
 
         // calculate onchain balance
-        let onchain_balance = onchain_funds.iter().fold(0, |a, b| {
-            if b.reserved {
-                return a;
-            }
-            a + amount_to_msat(&b.amount.clone().unwrap_or_default())
-        });
+        let onchain_balance = self.on_chain_balance().await?;
 
         // Collect utxos from onchain funds
         let utxos = onchain_funds
@@ -403,7 +395,9 @@ impl NodeAPI for Greenlight {
         let request = cln::TxprepareRequest {
             outputs: vec![cln::OutputDesc {
                 address: to_address,
-                amount: Some(cln::Amount { msat: 100 }),
+                amount: Some(cln::Amount {
+                    msat: self.on_chain_balance().await?,
+                }),
             }],
             feerate: Some(cln::Feerate {
                 style: Some(cln::feerate::Style::Perkw(fee_rate_sats_per_vbyte)),
@@ -609,6 +603,26 @@ impl NodeAPI for Greenlight {
         ExtendedPrivKey::new_master(self.sdk_config.network.into(), &self.signer.bip32_ext_key())?
             .derive_priv(&Secp256k1::new(), &path)
             .map_err(|e| anyhow!(e))
+    }
+
+    async fn list_funds(&self) -> Result<ListFundsResponse> {
+        let mut client = self.get_client().await?;
+        let funds = client
+            .list_funds(pb::ListFundsRequest::default())
+            .await?
+            .into_inner();
+        return Ok(funds);
+    }
+
+    async fn on_chain_balance(&self) -> Result<u64> {
+        let funds = self.list_funds().await?;
+        let on_chain_balance = funds.outputs.iter().fold(0, |a, b| {
+            if b.reserved {
+                return a;
+            }
+            a + amount_to_msat(&b.amount.clone().unwrap_or_default())
+        });
+        return Ok(on_chain_balance);
     }
 }
 

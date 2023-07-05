@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use crate::boltzswap::{BoltzApiCreateReverseSwapResponse, BoltzApiReverseSwapStatus};
 use anyhow::{anyhow, Result};
 use bitcoin::blockdata::opcodes;
 use bitcoin::blockdata::script::Builder;
@@ -9,10 +8,9 @@ use bitcoin::hashes::Hash;
 use bitcoin::secp256k1::{PublicKey, Secp256k1, SecretKey};
 use bitcoin::util::bip32::{ChildNumber, ExtendedPrivKey};
 use bitcoin::{Address, Script};
-use gl_client::pb::cln::TxprepareResponse;
-use gl_client::pb::Invoice;
 use gl_client::pb::Peer;
 use gl_client::pb::WithdrawResponse;
+use gl_client::pb::{Invoice, ListFundsResponse};
 use lightning_invoice::RawInvoice;
 use ripemd::Digest;
 use ripemd::Ripemd160;
@@ -22,6 +20,7 @@ use strum_macros::EnumString;
 use tokio::sync::mpsc;
 use tonic::Streaming;
 
+use crate::boltzswap::{BoltzApiCreateReverseSwapResponse, BoltzApiReverseSwapStatus};
 use crate::fiat::{FiatCurrency, Rate};
 use crate::grpc::{PaymentInformation, RegisterPaymentReply};
 use crate::lnurl::pay::model::SuccessActionProcessed;
@@ -77,9 +76,10 @@ pub trait NodeAPI: Send + Sync {
     async fn stream_incoming_payments(&self) -> Result<Streaming<gl_client::pb::IncomingPayment>>;
     async fn stream_log_messages(&self) -> Result<Streaming<gl_client::pb::LogEntry>>;
     async fn execute_command(&self, command: String) -> Result<String>;
-
     /// Gets the private key at the path specified
     fn derive_bip32_key(&self, path: Vec<ChildNumber>) -> Result<ExtendedPrivKey>;
+    async fn list_funds(&self) -> Result<ListFundsResponse>;
+    async fn on_chain_balance(&self) -> Result<u64>;
 }
 
 /// Trait covering LSP-related functionality

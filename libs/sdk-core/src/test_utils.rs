@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
+use std::vec;
+
 use anyhow::{anyhow, Result};
 use bitcoin::hashes::hex::ToHex;
 use bitcoin::hashes::{sha256, Hash};
@@ -7,15 +11,12 @@ use bitcoin::secp256k1::{PublicKey, Secp256k1, SecretKey};
 use bitcoin::util::bip32::{ChildNumber, ExtendedPrivKey};
 use bitcoin::Network;
 use gl_client::pb::amount::Unit;
-use gl_client::pb::{Amount, Invoice, Peer, WithdrawResponse};
+use gl_client::pb::{Amount, Invoice, ListFundsResponse, Peer, WithdrawResponse};
 use lightning::ln::PaymentSecret;
 use lightning_invoice::{Currency, InvoiceBuilder, RawInvoice};
 use rand::distributions::{Alphanumeric, DistString, Standard};
 use rand::rngs::OsRng;
 use rand::{random, Rng};
-use std::collections::HashMap;
-use std::time::{Duration, SystemTime};
-use std::vec;
 use tokio::sync::{mpsc, Mutex};
 use tokio::time::sleep;
 use tonic::Streaming;
@@ -29,8 +30,8 @@ use crate::lsp::LspInformation;
 use crate::models::{FiatAPI, LspAPI, NodeAPI, NodeState, Payment, Swap, SwapperAPI, SyncResponse};
 use crate::moonpay::MoonPayApi;
 use crate::swap::create_submarine_swap_script;
-use crate::SwapInfo;
 use crate::{parse_invoice, Config, LNInvoice, PaymentResponse, RouteHint};
+use crate::{PrepareWithdrawResponse, SwapInfo};
 
 pub struct MockBackupTransport {
     pub num_pushed: std::sync::Mutex<u32>,
@@ -129,6 +130,7 @@ impl SwapperAPI for MockSwapperAPI {
         Ok(())
     }
 }
+
 #[derive(Clone)]
 pub struct MockChainService {
     pub tip: u32,
@@ -215,7 +217,7 @@ pub struct MockReceiver {
 
 impl Default for MockReceiver {
     fn default() -> Self {
-        MockReceiver{bolt11: "lnbc500u1p3eerl2dq8w3jhxaqpp5w3w4z63erts5usxtkvpwdy356l29xfd43mnzlq6x2d69kqhjtepsxqyjw5qsp5an4vlkhp8cgahvamrdkn2uzmmcd5neq7yq3j6a8v0sc0q9rlde5s9qrsgqcqpxrzjqwk7573qcyfskzw33jnvs0shq9tzy28sd86naqlgkdga9p8z74fsyzancsqqvpsqqqqqqqlgqqqqqzsqygrzjqwk7573qcyfskzw33jnvs0shq9tzy28sd86naqlgkdga9p8z74fsyqqqqyqqqqqqqqqqqqlgqqqqqzsqjqacpq7rd5rf7ssza0lps93ehylrwtjhdlk44g0llwp039f8uqxsck52ccr69djxs59mmwqkvvglylpg0cdzaqusg9m9cyju92t7kjpfsqma2lmf".to_string()}
+        MockReceiver { bolt11: "lnbc500u1p3eerl2dq8w3jhxaqpp5w3w4z63erts5usxtkvpwdy356l29xfd43mnzlq6x2d69kqhjtepsxqyjw5qsp5an4vlkhp8cgahvamrdkn2uzmmcd5neq7yq3j6a8v0sc0q9rlde5s9qrsgqcqpxrzjqwk7573qcyfskzw33jnvs0shq9tzy28sd86naqlgkdga9p8z74fsyzancsqqvpsqqqqqqqlgqqqqqzsqygrzjqwk7573qcyfskzw33jnvs0shq9tzy28sd86naqlgkdga9p8z74fsyqqqqyqqqqqqqqqqqqlgqqqqqzsqjqacpq7rd5rf7ssza0lps93ehylrwtjhdlk44g0llwp039f8uqxsck52ccr69djxs59mmwqkvvglylpg0cdzaqusg9m9cyju92t7kjpfsqma2lmf".to_string() }
     }
 }
 
@@ -314,6 +316,14 @@ impl NodeAPI for MockNodeAPI {
         })
     }
 
+    async fn prepare_withdraw(
+        &self,
+        to_address: String,
+        fee_rate_sats_per_vbyte: u32,
+    ) -> Result<PrepareWithdrawResponse> {
+        Err(anyhow!("Not implemented"))
+    }
+
     async fn start_signer(&self, _shutdown: mpsc::Receiver<()>) {}
 
     async fn list_peers(&self) -> Result<Vec<Peer>> {
@@ -345,6 +355,14 @@ impl NodeAPI for MockNodeAPI {
 
     fn derive_bip32_key(&self, _path: Vec<ChildNumber>) -> Result<ExtendedPrivKey> {
         Ok(ExtendedPrivKey::new_master(Network::Bitcoin, &[])?)
+    }
+
+    async fn list_funds(&self) -> Result<ListFundsResponse> {
+        Err(anyhow!("Not implemented"))
+    }
+
+    async fn on_chain_balance(&self) -> Result<u64> {
+        Err(anyhow!("Not implemented"))
     }
 }
 
