@@ -45,13 +45,13 @@ jobs:
           go-version: '1.19.9'
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: configure jna windows
+      - name: Configure jna windows
         if: ${{ matrix.os == 'windows-latest' }}        
         run: |                    
           curl -o jna-5.12.1.jar https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.12.1/jna-5.12.1.jar
           set CLASSPATH="%cd%/jna-5.12.1.jar;"
 
-      - name: configure jna macos-latest
+      - name: Configure jna macos-latest
         if: ${{ matrix.os == 'macos-latest' }}
         run: |                    
           curl -o jna-5.12.1.jar https://repo1.maven.org/maven2/net/java/dev/jna/jna/5.12.1/jna-5.12.1.jar
@@ -74,29 +74,20 @@ jobs:
       - name: Install OpenSSL for Windows
         if: ${{ matrix.os == 'windows-latest' }}
         run: choco install openssl
+            
+      - name: Install dependencies
+        run: |
+          cd libs/sdk-bindings
+          make init           
 
-      - name: Install LLVM for Windows
+      - name: Run lib tests windows-latest
         if: ${{ matrix.os == 'windows-latest' }}
-        run: choco install -y llvm
-
-      - name: Set Env Variables for Windows
-        uses: allenevans/set-env@v2.0.0
-        if: ${{ matrix.os == 'windows-latest' }}
-        with:          
+        env:
           OPENSSL_STATIC: 1
           OPENSSL_DIR: 'C:/Program Files/OpenSSL-Win64'
           # This paths are required to work with static linking
           OPENSSL_LIB_DIR: 'C:/Program Files/OpenSSL-Win64/lib'
           OPENSSL_INCLUDE_DIR: 'C:/Program Files/OpenSSL-Win64/include'
-          LIBCLANG_PATH: 'C:/Program Files/LLVM/bin'    
-            
-      - name: install dependencies
-        run: |
-          cd libs/sdk-bindings
-          make init           
-
-      - name: run lib tests windows-latest
-        if: ${{ matrix.os == 'windows-latest' }}
         run: |         
           cd libs/sdk-bindings
           make csharp-windows golang-windows
@@ -106,19 +97,19 @@ jobs:
           cargo test test_csharp
           cargo test test_golang
       
-      - name: run lib tests macos-latest
+      - name: Run lib tests macos-latest
         if: ${{ matrix.os == 'macos-latest' }}
         run: |         
           cd libs/sdk-bindings
           make csharp-darwin golang-darwin
           cd ..          
           cargo test
-      - name: run tools tests        
+      - name: Run tools tests        
         run: |
           cd tools/sdk-cli
           cargo test
 
-      - name: clippy
+      - name: Clippy
         run: |
           cd libs
           # Explicitly allow clippy::uninlined-format-args lint because it's present in the generated breez_sdk.uniffi.rs
