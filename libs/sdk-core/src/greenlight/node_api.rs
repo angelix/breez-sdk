@@ -10,7 +10,7 @@ use bitcoin::util::bip32::{ChildNumber, ExtendedPrivKey};
 use gl_client::pb::amount::Unit;
 use gl_client::pb::cln::{
     self, CloseRequest, ListclosedchannelsClosedchannels, ListclosedchannelsRequest,
-    ListpeerchannelsRequest, TxprepareResponse,
+    ListpeerchannelsRequest,
 };
 use gl_client::pb::{
     Amount, Invoice, InvoiceRequest, InvoiceStatus, OffChainPayment, PayStatus, WithdrawResponse,
@@ -407,8 +407,10 @@ impl NodeAPI for Greenlight {
         };
 
         let response = node_client.tx_prepare(request).await?.into_inner();
+        debug!("tx_prepare response: {:?}", response);
+        debug!("raw_tx_hex: {:?}", String::from_utf8(response.unsigned_tx)?);
         return Ok(PrepareWithdrawResponse {
-            raw_tx_hex: format!("{:?}", response),
+            raw_tx_hex: String::new(), //String::from_utf8(response.unsigned_tx)?,
             sat_per_vbyte: fee_rate_sats_per_vbyte,
             fee_sat: 50,
         });

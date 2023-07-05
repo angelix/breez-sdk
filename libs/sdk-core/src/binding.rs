@@ -3,6 +3,12 @@
 use std::future::Future;
 use std::sync::Arc;
 
+use anyhow::{anyhow, Result};
+use flutter_rust_bridge::StreamSink;
+use log::{Level, LevelFilter, Metadata, Record};
+use once_cell::sync::{Lazy, OnceCell};
+use tokio::sync::mpsc;
+
 use crate::breez_services::BreezServices;
 use crate::breez_services::{self, BreezEvent, EventListener};
 use crate::chain::RecommendedFees;
@@ -19,13 +25,9 @@ use crate::models::{
     SwapInfo,
 };
 use crate::{
-    BackupStatus, BuyBitcoinProvider, LnUrlCallbackStatus, ReverseSwapInfo, ReverseSwapPairInfo,
+    BackupStatus, BuyBitcoinProvider, LnUrlCallbackStatus, PrepareWithdrawResponse,
+    ReverseSwapInfo, ReverseSwapPairInfo,
 };
-use anyhow::{anyhow, Result};
-use flutter_rust_bridge::StreamSink;
-use log::{Level, LevelFilter, Metadata, Record};
-use once_cell::sync::{Lazy, OnceCell};
-use tokio::sync::mpsc;
 
 static BREEZ_SERVICES_INSTANCE: OnceCell<Arc<BreezServices>> = OnceCell::new();
 static BREEZ_SERVICES_SHUTDOWN: OnceCell<mpsc::Sender<()>> = OnceCell::new();
@@ -271,6 +273,18 @@ pub fn sweep(to_address: String, fee_rate_sats_per_vbyte: u64) -> Result<()> {
     block_on(async {
         get_breez_services()?
             .sweep(to_address, fee_rate_sats_per_vbyte)
+            .await
+    })
+}
+
+/// See [BreezServices::prepare_withdraw]
+pub fn prepare_withdraw(
+    to_address: String,
+    fee_rate_sats_per_vbyte: u32,
+) -> Result<PrepareWithdrawResponse> {
+    block_on(async {
+        get_breez_services()?
+            .prepare_withdraw(to_address, fee_rate_sats_per_vbyte)
             .await
     })
 }

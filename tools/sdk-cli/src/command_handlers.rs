@@ -101,7 +101,7 @@ pub(crate) async fn handle_command(
 
             init_sdk(config, &persistence.get_or_create_seed(), &creds).await?;
             persistence.save_credentials(creds)?;
-            Ok("Node was registered succesfully".to_string())
+            Ok("Node was registered successfully".to_string())
         }
         Commands::RecoverNode {} => {
             let config = persistence
@@ -115,7 +115,7 @@ pub(crate) async fn handle_command(
 
             init_sdk(config, &persistence.get_or_create_seed(), &creds).await?;
             persistence.save_credentials(creds)?;
-            Ok("Node was recovered succesfully".to_string())
+            Ok("Node was recovered successfully".to_string())
         }
         Commands::Init {} => match persistence.credentials() {
             Some(creds) => {
@@ -123,13 +123,13 @@ pub(crate) async fn handle_command(
                     .get_or_create_config()?
                     .to_sdk_config(&persistence.data_dir);
                 init_sdk(config, &persistence.get_or_create_seed(), &creds).await?;
-                Ok("Node was initialized succesfully".to_string())
+                Ok("Node was initialized successfully".to_string())
             }
             None => Err(anyhow!("Credentials not found")),
         },
         Commands::Sync {} => {
             sdk()?.sync().await?;
-            Ok("Sync finished succesfully".to_string())
+            Ok("Sync finished successfully".to_string())
         }
         Commands::Parse { input } => parse(&input)
             .await
@@ -204,7 +204,19 @@ pub(crate) async fn handle_command(
             sat_per_byte,
         } => {
             sdk()?.sweep(to_address, sat_per_byte).await?;
-            Ok("Onchain funds were swept succesfully".to_string())
+            Ok("Onchain funds were swept successfully".to_string())
+        }
+        Commands::PrepareWithdraw {
+            to_address,
+            fee_rate_sats_per_vbyte,
+        } => {
+            let response = sdk()?
+                .prepare_withdraw(to_address, fee_rate_sats_per_vbyte)
+                .await?;
+            Ok(format!(
+                "PrepareWithdraw ran successfully with response: {:?}",
+                response
+            ))
         }
         Commands::ListLsps {} => {
             let lsps = sdk()?.list_lsps().await?;
@@ -212,7 +224,7 @@ pub(crate) async fn handle_command(
         }
         Commands::ConnectLSP { lsp_id } => {
             sdk()?.connect_lsp(lsp_id).await?;
-            Ok("LSP connected succesfully".to_string())
+            Ok("LSP connected successfully".to_string())
         }
         Commands::NodeInfo {} => {
             serde_json::to_string_pretty(&sdk()?.node_info()?).map_err(|e| e.into())
@@ -230,7 +242,7 @@ pub(crate) async fn handle_command(
         }
         Commands::StopNode {} => {
             sdk()?.stop().await?;
-            Ok("Node was stopped succesfully".to_string())
+            Ok("Node was stopped successfully".to_string())
         }
         Commands::RecommendedFees {} => {
             serde_json::to_string_pretty(&sdk()?.recommended_fees().await?).map_err(|e| e.into())
@@ -332,7 +344,7 @@ pub(crate) async fn handle_command(
         }
         Commands::Backup {} => {
             sdk().unwrap().backup().await?;
-            Ok("Backup completed succesfully".into())
+            Ok("Backup completed successfully".into())
         }
     }
 }
