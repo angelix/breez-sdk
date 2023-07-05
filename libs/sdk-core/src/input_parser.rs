@@ -155,7 +155,8 @@ pub async fn parse(input: &str) -> Result<InputType> {
                 .iter()
                 .find(|(key, _)| key == &"lightning")
                 .map(|(_, value)| parse_invoice(value))
-                .transpose()?;
+                .transpose()
+                .map_err(|e| anyhow!("error"))?; // TODO Temp conversion
         }
 
         return match invoice_param {
@@ -194,7 +195,8 @@ pub async fn parse(input: &str) -> Result<InputType> {
             });
         }
 
-        lnurl_endpoint = maybe_replace_host_with_mockito_test_host(lnurl_endpoint)?;
+        lnurl_endpoint = maybe_replace_host_with_mockito_test_host(lnurl_endpoint)
+            .map_err(|e| anyhow!("error"))?; // TODO Temp conversion
         let lnurl_data: LnUrlRequestData = reqwest::get(lnurl_endpoint).await?.json().await?;
         let temp = lnurl_data.into();
         let temp = match temp {

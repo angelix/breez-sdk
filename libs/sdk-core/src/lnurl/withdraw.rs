@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
+use crate::errors::InternalSdkError;
 use crate::{lnurl::*, LnUrlCallbackStatus};
 use crate::{LNInvoice, LnUrlWithdrawRequestData};
-use anyhow::{anyhow, Result};
 
 /// Validates invoice and performs the second and last step of LNURL-withdraw, as per
 /// <https://github.com/lnurl/luds/blob/luds/03.md>
@@ -15,23 +15,24 @@ use anyhow::{anyhow, Result};
 pub(crate) async fn validate_lnurl_withdraw(
     req_data: LnUrlWithdrawRequestData,
     invoice: LNInvoice,
-) -> Result<LnUrlCallbackStatus> {
+) -> InternalSdkResult<LnUrlCallbackStatus> {
     match invoice
         .amount_msat
-        .ok_or("Expected invoice amount, but found none")
-        .map_err(|e| anyhow!(e))?
+        .ok_or("Expected invoice amount, but found none".to_string())
+        .map_err(InternalSdkError::LnUrlWithdrawValidationError)?
     {
-        n if n < req_data.min_withdrawable => Err(anyhow!(
-            "Amount is smaller than the minimum allowed by the LNURL-withdraw endpoint"
+        n if n < req_data.min_withdrawable => Err(InternalSdkError::LnUrlWithdrawValidationError(
+            "Amount is smaller than the minimum allowed by the LNURL-withdraw endpoint".into(),
         )),
-        n if n > req_data.max_withdrawable => Err(anyhow!(
-            "Amount is bigger than the maximum allowed by the LNURL-withdraw endpoint"
+        n if n > req_data.max_withdrawable => Err(InternalSdkError::LnUrlWithdrawValidationError(
+            "Amount is bigger than the maximum allowed by the LNURL-withdraw endpoint".into(),
         )),
         _ => {
             let callback_url = build_withdraw_callback_url(&req_data, &invoice)?;
             let callback_resp_text = reqwest::get(&callback_url).await?.text().await?;
 
-            serde_json::from_str::<LnUrlCallbackStatus>(&callback_resp_text).map_err(|e| anyhow!(e))
+            serde_json::from_str::<LnUrlCallbackStatus>(&callback_resp_text)
+                .map_err(|e| InternalSdkError::LnUrlWithdrawCallbackParsingError(e.to_string()))
         }
     }
 }
@@ -39,7 +40,7 @@ pub(crate) async fn validate_lnurl_withdraw(
 fn build_withdraw_callback_url(
     req_data: &LnUrlWithdrawRequestData,
     invoice: &LNInvoice,
-) -> Result<String> {
+) -> InternalSdkResult<String> {
     let mut url = reqwest::Url::from_str(&req_data.callback)?;
 
     url.query_pairs_mut().append_pair("k1", &req_data.k1);
@@ -64,7 +65,7 @@ mod tests {
         withdraw_req: &LnUrlWithdrawRequestData,
         invoice: &LNInvoice,
         error: Option<String>,
-    ) -> Result<Mock> {
+    ) -> InternalSdkResult<Mock> {
         let callback_url = build_withdraw_callback_url(withdraw_req, invoice)?;
         let url = reqwest::Url::parse(&callback_url)?;
         let mockito_path: &str = &format!("{}?{}", url.path(), url.query().unwrap());
@@ -96,7 +97,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_lnurl_withdraw_success() -> Result<()> {
+    async fn test_lnurl_withdraw_success() -> InternalSdkResult<()> {
         let invoice_str = "lnbc110n1p38q3gtpp5ypz09jrd8p993snjwnm68cph4ftwp22le34xd4r8ftspwshxhmnsdqqxqyjw5qcqpxsp5htlg8ydpywvsa7h3u4hdn77ehs4z4e844em0apjyvmqfkzqhhd2q9qgsqqqyssqszpxzxt9uuqzymr7zxcdccj5g69s8q7zzjs7sgxn9ejhnvdh6gqjcy22mss2yexunagm5r2gqczh8k24cwrqml3njskm548aruhpwssq9nvrvz";
         let invoice = crate::invoice::parse_invoice(invoice_str)?;
         let withdraw_req = get_test_withdraw_req_data(0, 100);
@@ -112,7 +113,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_lnurl_withdraw_validate_amount_failure() -> Result<()> {
+    async fn test_lnurl_withdraw_validate_amount_failure() -> InternalSdkResult<()> {
         let invoice_str = "lnbc110n1p38q3gtpp5ypz09jrd8p993snjwnm68cph4ftwp22le34xd4r8ftspwshxhmnsdqqxqyjw5qcqpxsp5htlg8ydpywvsa7h3u4hdn77ehs4z4e844em0apjyvmqfkzqhhd2q9qgsqqqyssqszpxzxt9uuqzymr7zxcdccj5g69s8q7zzjs7sgxn9ejhnvdh6gqjcy22mss2yexunagm5r2gqczh8k24cwrqml3njskm548aruhpwssq9nvrvz";
         let invoice = crate::invoice::parse_invoice(invoice_str)?;
         let withdraw_req = get_test_withdraw_req_data(0, 1);
@@ -126,13 +127,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_lnurl_withdraw_endpoint_failure() -> Result<()> {
+    async fn test_lnurl_withdraw_endpoint_failure() -> InternalSdkResult<()> {
         let invoice_str = "lnbc110n1p38q3gtpp5ypz09jrd8p993snjwnm68cph4ftwp22le34xd4r8ftspwshxhmnsdqqxqyjw5qcqpxsp5htlg8ydpywvsa7h3u4hdn77ehs4z4e844em0apjyvmqfkzqhhd2q9qgsqqqyssqszpxzxt9uuqzymr7zxcdccj5g69s8q7zzjs7sgxn9ejhnvdh6gqjcy22mss2yexunagm5r2gqczh8k24cwrqml3njskm548aruhpwssq9nvrvz";
         let invoice = crate::invoice::parse_invoice(invoice_str)?;
         let withdraw_req = get_test_withdraw_req_data(0, 100);
 
         // Generic error reported by endpoint
-        let _m = mock_lnurl_withdraw_callback(&withdraw_req, &invoice, Some("error".parse()?))?;
+        let _m = mock_lnurl_withdraw_callback(&withdraw_req, &invoice, Some("error".into()))?;
 
         assert!(matches!(
             validate_lnurl_withdraw(withdraw_req, invoice).await?,

@@ -195,7 +195,7 @@ impl BreezServices {
     /// * `amount_sats` - The amount to pay in satoshis
     pub async fn send_payment(&self, bolt11: String, amount_sats: Option<u64>) -> Result<Payment> {
         self.start_node().await?;
-        let parsed_invoice = parse_invoice(bolt11.as_str())?;
+        let parsed_invoice = parse_invoice(bolt11.as_str()).map_err(|e| anyhow!("error"))?; // TODO temp conversion
         let payment_res = self
             .node_api
             .send_payment(bolt11.clone(), amount_sats)
@@ -305,7 +305,9 @@ impl BreezServices {
         let invoice = self
             .receive_payment(amount_sats, description.unwrap_or_default())
             .await?;
-        validate_lnurl_withdraw(req_data, invoice).await
+        validate_lnurl_withdraw(req_data, invoice)
+            .await
+            .map_err(|e| anyhow!("error")) // TODO temp conversion
     }
 
     /// Third and last step of LNURL-auth. The first step is `parse()`, which also validates the LNURL destination
@@ -1316,7 +1318,7 @@ impl Receiver for PaymentReceiver {
             .await?;
         info!("Invoice created {}", invoice.bolt11);
 
-        let mut parsed_invoice = parse_invoice(&invoice.bolt11)?;
+        let mut parsed_invoice = parse_invoice(&invoice.bolt11).map_err(|e| anyhow!("error"))?; // TODO temp conversion
 
         // check if the lsp hint already exists
         info!("Existing routing hints {:?}", parsed_invoice.routing_hints);
@@ -1355,7 +1357,7 @@ impl Receiver for PaymentReceiver {
         let signed_invoice_with_hint = self.node_api.sign_invoice(raw_invoice_with_hint)?;
         info!("Signed invoice with hint = {}", signed_invoice_with_hint);
 
-        parsed_invoice = parse_invoice(&signed_invoice_with_hint)?;
+        parsed_invoice = parse_invoice(&signed_invoice_with_hint).map_err(|e| anyhow!("error"))?; // TODO temp conversion
 
         // register the payment at the lsp if needed
         if destination_invoice_amount_sats < amount_sats {

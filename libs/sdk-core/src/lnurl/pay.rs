@@ -63,7 +63,8 @@ fn build_pay_callback_url(
     }
 
     let mut callback_url = url.to_string();
-    callback_url = maybe_replace_host_with_mockito_test_host(callback_url)?;
+    callback_url =
+        maybe_replace_host_with_mockito_test_host(callback_url).map_err(|e| anyhow!("error"))?; // TODO Temp conversion
     Ok(callback_url)
 }
 
@@ -98,7 +99,7 @@ fn validate_invoice(
     bolt11: &str,
     req_data: &LnUrlPayRequestData,
 ) -> Result<()> {
-    let invoice = parse_invoice(bolt11)?;
+    let invoice = parse_invoice(bolt11).map_err(|e| anyhow!("error"))?; // TODO temp conversion
 
     match invoice.description_hash {
         None => return Err(anyhow!("Invoice is missing description hash")),

@@ -2,11 +2,13 @@ pub(crate) mod auth;
 pub(crate) mod pay;
 pub(crate) mod withdraw;
 
-use anyhow::Result;
+use crate::errors::InternalSdkResult;
 
 /// Replaces the scheme, host and port with a local mockito host. Preserves the rest of the path.
 #[cfg(test)]
-pub(crate) fn maybe_replace_host_with_mockito_test_host(lnurl_endpoint: String) -> Result<String> {
+pub(crate) fn maybe_replace_host_with_mockito_test_host(
+    lnurl_endpoint: String,
+) -> InternalSdkResult<String> {
     // During tests, the mockito test URL chooses a free port. This cannot be known in advance,
     // so the URL has to be adjusted dynamically.
     let mockito_endpoint_url = reqwest::Url::parse(&mockito::server_url())?;
@@ -20,7 +22,9 @@ pub(crate) fn maybe_replace_host_with_mockito_test_host(lnurl_endpoint: String) 
 }
 
 #[cfg(not(test))]
-pub(crate) fn maybe_replace_host_with_mockito_test_host(lnurl_endpoint: String) -> Result<String> {
+pub(crate) fn maybe_replace_host_with_mockito_test_host(
+    lnurl_endpoint: String,
+) -> InternalSdkResult<String> {
     // When not called from a test, we fallback to keeping the URL intact
     Ok(lnurl_endpoint)
 }

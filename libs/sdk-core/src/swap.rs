@@ -402,7 +402,7 @@ impl BTCReceiveSwap {
 
         // Making sure the invoice amount matches the on-chain amount
         let payreq = swap_info.bolt11.unwrap();
-        let ln_invoice = parse_invoice(payreq.clone())?;
+        let ln_invoice = parse_invoice(payreq.clone()).map_err(|e| anyhow!("error"))?; // TODO Temp conversion
         debug!("swap info confirmed = {}", swap_info.confirmed_sats);
         if ln_invoice.amount_msat.unwrap() != (swap_info.confirmed_sats * 1000) {
             warn!(

@@ -1,3 +1,4 @@
+use crate::errors::*;
 use anyhow::{anyhow, Result};
 use bitcoin::secp256k1::PublicKey;
 use hex::ToHex;
@@ -150,17 +151,17 @@ pub fn add_lsp_routing_hints(
 }
 
 /// Parse a BOLT11 payment request and return a structure contains the parsed fields.
-pub fn parse_invoice(bolt11: &str) -> Result<LNInvoice> {
+pub fn parse_invoice(bolt11: &str) -> SdkResult<LNInvoice> {
     let signed = bolt11
         .strip_prefix("lightning:")
         .unwrap_or(bolt11)
-        .parse::<SignedRawInvoice>()?;
-    let invoice = Invoice::from_signed(signed)?;
+        .parse::<SignedRawInvoice>().map_err(Into::<InternalSdkError>::into)?;
+    let invoice = Invoice::from_signed(signed).map_err(Into::<InternalSdkError>::into)?;
 
-    let since_the_epoch = invoice.timestamp().duration_since(UNIX_EPOCH)?;
+    let since_the_epoch = invoice.timestamp().duration_since(UNIX_EPOCH).map_err(Into::<InternalSdkError>::into)?;
 
     // make sure signature is valid
-    invoice.check_signature()?;
+    invoice.check_signature().map_err(Into::<InternalSdkError>::into)?;
 
     // Try to take payee pubkey from the tagged fields, if doesn't exist recover it from the signature
     let payee_pubkey: String = match invoice.payee_pub_key() {

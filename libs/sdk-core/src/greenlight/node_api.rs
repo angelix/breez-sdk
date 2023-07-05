@@ -390,7 +390,11 @@ impl NodeAPI for Greenlight {
             preimage: preimage.unwrap_or_default(),
         };
 
-        Ok(client.create_invoice(request).await?.into_inner())
+        Ok(client
+            .create_invoice(request)
+            .await
+            .map_err(|e| anyhow!("error"))? // TODO temp conversion
+            .into_inner())
     }
 
     async fn send_payment(
@@ -400,7 +404,9 @@ impl NodeAPI for Greenlight {
     ) -> Result<crate::models::PaymentResponse> {
         let mut description = None;
         if !bolt11.is_empty() {
-            description = parse_invoice(&bolt11)?.description;
+            description = parse_invoice(&bolt11)
+                .map_err(|e| anyhow!("error"))? // TODO temp conversion
+                .description;
         }
 
         let mut client: node::ClnClient = self.get_node_client().await?;
@@ -659,7 +665,7 @@ impl TryFrom<OffChainPayment> for crate::models::Payment {
     type Error = anyhow::Error;
 
     fn try_from(p: OffChainPayment) -> std::result::Result<Self, Self::Error> {
-        let ln_invoice = parse_invoice(&p.bolt11)?;
+        let ln_invoice = parse_invoice(&p.bolt11).map_err(|e| anyhow!("error"))?; // TODO temp conversion
         Ok(crate::models::Payment {
             id: hex::encode(p.payment_hash.clone()),
             payment_type: PaymentType::Received,
@@ -693,7 +699,7 @@ impl TryFrom<pb::Invoice> for crate::models::Payment {
     type Error = anyhow::Error;
 
     fn try_from(invoice: pb::Invoice) -> std::result::Result<Self, Self::Error> {
-        let ln_invoice = parse_invoice(&invoice.bolt11)?;
+        let ln_invoice = parse_invoice(&invoice.bolt11).map_err(|e| anyhow!("error"))?; // TODO temp conversion
         Ok(crate::models::Payment {
             id: hex::encode(invoice.payment_hash.clone()),
             payment_type: PaymentType::Received,
@@ -725,7 +731,9 @@ impl TryFrom<pb::Payment> for crate::models::Payment {
     fn try_from(payment: pb::Payment) -> std::result::Result<Self, Self::Error> {
         let mut description = None;
         if !payment.bolt11.is_empty() {
-            description = parse_invoice(&payment.bolt11)?.description;
+            description = parse_invoice(&payment.bolt11)
+                .map_err(|e| anyhow!("error"))? // TODO temp conversion
+                .description;
         }
 
         let payment_amount = amount_to_msat(&payment.amount.unwrap_or_default());

@@ -26,6 +26,7 @@ use flutter_rust_bridge::StreamSink;
 use log::{Level, LevelFilter, Metadata, Record};
 use once_cell::sync::{Lazy, OnceCell};
 use tokio::sync::mpsc;
+use crate::errors::ExternalSdkError;
 
 static BREEZ_SERVICES_INSTANCE: OnceCell<Arc<BreezServices>> = OnceCell::new();
 static BREEZ_SERVICES_SHUTDOWN: OnceCell<mpsc::Sender<()>> = OnceCell::new();
@@ -353,7 +354,7 @@ pub(crate) fn rt() -> &'static tokio::runtime::Runtime {
 
 // These functions are exposed temporarily for integration purposes
 
-pub fn parse_invoice(invoice: String) -> Result<LNInvoice> {
+pub fn parse_invoice(invoice: String) -> Result<LNInvoice, ExternalSdkError> {
     invoice::parse_invoice(&invoice)
 }
 

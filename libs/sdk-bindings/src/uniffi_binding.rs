@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 
 use breez_sdk_core::{
-    mnemonic_to_seed as sdk_mnemonic_to_seed, parse as sdk_parse_input,
+    errors::*, mnemonic_to_seed as sdk_mnemonic_to_seed, parse as sdk_parse_input,
     parse_invoice as sdk_parse_invoice, AesSuccessActionDataDecrypted, BackupFailedData,
     BackupStatus, BitcoinAddressData, BreezEvent, BreezServices, BuyBitcoinProvider, ChannelState,
     ClosedChannelPaymentDetails, Config, CurrencyInfo, EnvironmentType, EventListener,
@@ -368,8 +368,8 @@ impl BlockingBreezServices {
     }
 }
 
-pub fn parse_invoice(invoice: String) -> Result<LNInvoice, SDKError> {
-    sdk_parse_invoice(&invoice).map_err(|e| e.into())
+pub fn parse_invoice(invoice: String) -> Result<LNInvoice, ExternalSdkError> {
+    sdk_parse_invoice(&invoice)
 }
 
 pub fn parse_input(s: String) -> Result<InputType, SDKError> {

@@ -13,6 +13,12 @@ enum SDKError {
   "Error",
 };
 
+[Error]
+enum ExternalSdkError {
+    "LnInvoiceError",
+    "Generic",
+};
+
 enum EnvironmentType {
     "Production",
     "Staging",
@@ -505,7 +511,7 @@ namespace breez_sdk {
  [Throws=SDKError]
  void set_log_stream(LogStream log_stream);
 
- [Throws=SDKError]
+ [Throws=ExternalSdkError]
  LNInvoice parse_invoice(string invoice);
 
  [Throws=SDKError]
