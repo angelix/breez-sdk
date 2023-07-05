@@ -71,7 +71,6 @@ jobs:
 
       - name: Perl version
         run: |
-          refreshenv
           perl -V
 
       - name: Install OpenSSL for Windows
