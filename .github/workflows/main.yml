@@ -44,11 +44,6 @@ jobs:
         with:
           go-version: '1.19.9'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: install dependencies
-        run: |
-          cd libs/sdk-bindings
-          make init          
 
       - name: configure jna windows
         if: ${{ matrix.os == 'windows-latest' }}        
@@ -67,7 +62,8 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}   
       
-      - uses: shogo82148/actions-setup-perl@v1
+      - name: Install Perl
+        uses: shogo82148/actions-setup-perl@v1
         if: ${{ matrix.os == 'windows-latest' }}
         with:
           perl-version: '5.34'
@@ -79,20 +75,25 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: choco install openssl
 
-      # - name: Instal LLVM for Windows
-      #   if: ${{ matrix.os == 'windows-latest' }}
-      #   run: choco install -y llvm --version 9.0.1
+      - name: Install LLVM for Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: choco install -y llvm
 
-      # - name: Set Env Variables for Windows
-      #   uses: allenevans/set-env@v2.0.0
-      #   if: ${{ matrix.os == 'windows-latest' }}
-      #   with:          
-      #     OPENSSL_STATIC: 1
-      #     OPENSSL_DIR: 'C:/vcpkg/packages/openssl_x64-windows'
-      #     # This paths are required to work with static linking
-      #     OPENSSL_LIB_DIR: 'C:/vcpkg/packages/openssl_x64-windows/lib'
-      #     OPENSSL_INCLUDE_DIR: 'C:/vcpkg/packages/openssl_x64-windows/include'
-      #     LIBCLANG_PATH: 'C:\Program Files\LLVM\bin'     
+      - name: Set Env Variables for Windows
+        uses: allenevans/set-env@v2.0.0
+        if: ${{ matrix.os == 'windows-latest' }}
+        with:          
+          OPENSSL_STATIC: 1
+          OPENSSL_DIR: 'C:/Program Files/OpenSSL-Win64'
+          # This paths are required to work with static linking
+          OPENSSL_LIB_DIR: 'C:/Program Files/OpenSSL-Win64/lib'
+          OPENSSL_INCLUDE_DIR: 'C:/Program Files/OpenSSL-Win64/include'
+          LIBCLANG_PATH: 'C:/Program Files/LLVM/bin'    
+            
+      - name: install dependencies
+        run: |
+          cd libs/sdk-bindings
+          make init           
 
       - name: run lib tests windows-latest
         if: ${{ matrix.os == 'windows-latest' }}
